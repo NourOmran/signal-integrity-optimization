@@ -6,7 +6,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.preprocessing import StandardScaler, OneHotEncoder, LabelEncoder,MinMaxScaler
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV , RandomizedSearchCV
 from sklearn.svm import SVR
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.tree import DecisionTreeRegressor
@@ -56,6 +56,52 @@ def rmse_scorer_with_nan_handling(y_true, y_pred):
 
 rmse_scorer = make_scorer(rmse_scorer_with_nan_handling, greater_is_better=False)
 
+
+
+def randomized_search_lgbm_quantile(X_train, y_train, alpha):
+    """
+    Performs a Randomized Search for optimal LightGBM parameters for a given quantile.
+    This is much faster than GridSearchCV.
+    """
+    lgbm = lgb.LGBMRegressor(objective="quantile", alpha=alpha, random_state=42)
+
+    # A more focused parameter distribution for RandomizedSearch
+    # RandomizedSearchCV samples from this distribution
+    param_grid = {
+        "num_leaves": [15, 31, 63,127],
+        "learning_rate": [0.001,0.005, 0.01, 0.05],
+        "n_estimators": [500, 1000,2000],
+        "min_child_samples": [20, 40],
+        "subsample": [0.8, 1.0],
+        "colsample_bytree": [0.8, 1.0],
+        "max_depth": [-1, 10],
+        "reg_alpha": [0, 0.5],
+        "reg_lambda": [0, 0.5],
+        "min_split_gain": [0.0, 0.1],
+        "boosting_type": ["gbdt"] # Sticking with a single type for speed
+    }
+
+    # The key change: Use RandomizedSearchCV instead of GridSearchCV
+    # n_iter controls how many random combinations to try. 10 is a good start.
+    random_search = RandomizedSearchCV(
+        lgbm,
+        param_grid,
+        n_iter=20,  # Try 20 random combinations
+        scoring=rmse_scorer,
+        cv=3,
+        verbose=1,
+        n_jobs=-1,
+        random_state=42,
+        error_score='raise'
+    )
+    random_search.fit(X_train, y_train)
+    return random_search.best_estimator_
+
+
+
+
+
+
 # --------------------------
 # Function to grid search for a given quantile
 # --------------------------
@@ -63,15 +109,28 @@ def gridsearch_lgbm_quantile(X_train, y_train, alpha):
     lgbm = lgb.LGBMRegressor(objective="quantile", alpha=alpha, random_state=42)
 
     param_grid = {
-        "num_leaves":  [31],
-        "learning_rate": [0.01],
-        "n_estimators":  [1000],
-        "min_child_samples":  [20],
-        "subsample": [0.8],
-        "colsample_bytree": [0.8]
+        "num_leaves": [15, 31, 63, 127],
+        "learning_rate": [0.001, 0.005, 0.01, 0.05],
+        "n_estimators": [500, 1000, 2000],
+        "min_child_samples": [5, 10, 20, 40],
+        "subsample": [0.6, 0.8, 1.0],
+        "colsample_bytree": [0.6, 0.8, 1.0],
+        "max_depth": [-1, 5, 10, 20],
+        "reg_alpha": [0, 0.1, 0.5, 1.0],      # L1 regularization
+        "reg_lambda": [0, 0.1, 0.5, 1.0],     # L2 regularization
+        "min_split_gain": [0.0, 0.1, 0.2],    # Minimum loss reduction to split
+        "boosting_type": ["gbdt", "dart"]     # Try standard and Dropouts meet Multiple Additive Regression Trees
     }
 
-    grid = GridSearchCV(lgbm, param_grid, scoring=rmse_scorer, cv=3, verbose=1, n_jobs=-1, error_score='raise')
+    grid = GridSearchCV(
+        lgbm,
+        param_grid,
+        scoring=rmse_scorer,
+        cv=3,
+        verbose=2,
+        n_jobs=-1,
+        error_score='raise'
+    )
     grid.fit(X_train, y_train)
 
     return grid.best_estimator_
@@ -86,7 +145,9 @@ test_meta_features_list = []
 
 for q in quantiles:
     print(f"Training model for quantile: {q}") # Added print statement
-    best_model = gridsearch_lgbm_quantile(X_train_base, y_train_base, q)
+    #best_model = gridsearch_lgbm_quantile(X_train_base, y_train_base, q)
+    best_model = randomized_search_lgbm_quantile(X_train_base, y_train_base, q)
+    print(f"Best parameters for quantile {q}: {best_model.get_params()}")
     base_models[q] = best_model
 
     # Meta features

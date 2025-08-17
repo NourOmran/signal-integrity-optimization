@@ -1,0 +1,41 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environment
+env/
+venv/
+.venv/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# macOS system files
+.DS_Store
+
+# Logs
+*.log
+
+# Environment/config files
+.env
+*.ini
+*.cfg
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Data files
+*.csv
+*.tsv
+*.xlsx
+*.xls
+
+# Model files
+
+
+# Temporary files
+tmp/
+temp/

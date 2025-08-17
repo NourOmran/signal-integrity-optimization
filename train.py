@@ -68,25 +68,24 @@ def randomized_search_lgbm_quantile(X_train, y_train, alpha):
     # A more focused parameter distribution for RandomizedSearch
     # RandomizedSearchCV samples from this distribution
     param_grid = {
-        "num_leaves": [15, 31, 63,127],
-        "learning_rate": [0.001,0.005, 0.01, 0.05],
-        "n_estimators": [500, 1000,2000],
-        "min_child_samples": [20, 40],
-        "subsample": [0.8, 1.0],
-        "colsample_bytree": [0.8, 1.0],
-        "max_depth": [-1, 10],
-        "reg_alpha": [0, 0.5],
-        "reg_lambda": [0, 0.5],
-        "min_split_gain": [0.0, 0.1],
-        "boosting_type": ["gbdt"] # Sticking with a single type for speed
+        "num_leaves": [15, 31, 63, 127],
+        "learning_rate": [0.001, 0.005, 0.01, 0.05],
+        "n_estimators": [500, 1000, 2000 , 2500],
+        "min_child_samples": [5, 10, 20, 40],
+        "subsample": [0.6, 0.8, 1.0],
+        "colsample_bytree": [0.6, 0.8, 1.0],
+        "max_depth": [-1, 5, 10, 20],
+        "reg_alpha": [0, 0.1, 0.5, 1.0],      # L1 regularization
+        "reg_lambda": [0, 0.1, 0.5, 1.0],     # L2 regularization
+        "min_split_gain": [0.0, 0.1, 0.2],    # Minimum loss reduction to split
+        "boosting_type": ["gbdt", "dart"]     # Try standard and Dropouts meet Multiple Additive Regression Trees
     }
-
     # The key change: Use RandomizedSearchCV instead of GridSearchCV
     # n_iter controls how many random combinations to try. 10 is a good start.
     random_search = RandomizedSearchCV(
         lgbm,
         param_grid,
-        n_iter=20,  # Try 20 random combinations
+        n_iter=50,  # Try 20 random combinations
         scoring=rmse_scorer,
         cv=3,
         verbose=1,
@@ -201,7 +200,7 @@ for q, model in base_models.items():
     base_preds_test[f'Q{int(q*100)}'] = model.predict(X_test)
 
 # Define the filename for saving the model
-model_filename = 'stacked_model.joblib'
+model_filename = '/Users/nouromran/Documents/upWork/signal integrity optimization/Models/stacked_model.joblib'
 
 # Save the stacked model to the file
 joblib.dump(meta_model, model_filename)
@@ -212,7 +211,7 @@ print(f"Stacked model saved to {model_filename}")
 
 
 # Define the filename for saving the base models
-base_models_filename = 'base_models.joblib'
+base_models_filename = '/Users/nouromran/Documents/upWork/signal integrity optimization/Models/base_models.joblib'
 
 # Save the base_models dictionary to the file
 joblib.dump(base_models, base_models_filename)

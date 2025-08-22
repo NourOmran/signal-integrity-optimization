@@ -10,11 +10,20 @@ pd1 = par.drop_duplicates()
 
 print("Number of unique trials:", pd1.shape)
 
+
+"""
+
 pd2 =  pd.read_csv("optimization preemphasis/high_eyeSNR_data.csv")
 
 pd2 = pd2.drop(columns=["Cable_Name"])
-pd2= pd2.iloc[:59, :]
+pd2= pd2.iloc[92:, :]
 print( pd2)
+
+
+"""
+pd2 = pd.read_csv("data/case4.csv")
+pd2 = pd2.drop(columns=["Cable_Name"])
+pd2 = pd2[pd2["eyeSNR"] > 4]
 
 
 parameters1 = pd1[["preW", "mainW", "postW", "dpre", "dpost", "Rdrv"]]

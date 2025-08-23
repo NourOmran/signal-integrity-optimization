@@ -29,7 +29,7 @@ import warnings
 warnings.filterwarnings("ignore")
 print("Importing libraries completed")
 print("*" * 100)
-path="/Users/nouromran/Documents/upWork/signal integrity optimization/data/"
+path="/Users/nouromran/Documents/upWork/signal integrity optimization/data/Train/"
 if not os.path.exists(path):
     os.makedirs(path)
 all_files = glob.glob(os.path.join(path, "*.csv"))
@@ -43,10 +43,13 @@ all_csv=all_csv.drop(columns=['Cable_Name','Cable Name'])
 X = all_csv.drop(columns=['eyeSNR'])
 y = all_csv['eyeSNR']
 
+feature_names = X.columns.tolist()
+#scaler = MinMaxScaler()
+#X_scaled = scaler.fit_transform(X)
+
 X_train_base, X_temp, y_train_base, y_temp = train_test_split(X, y, test_size=0.4, random_state=42)
 X_train_meta, X_test, y_train_meta, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
 
-# --------------------------
 # RMSE scorer
 # --------------------------
 def rmse_scorer_with_nan_handling(y_true, y_pred):
@@ -85,7 +88,7 @@ def randomized_search_lgbm_quantile(X_train, y_train, alpha):
     random_search = RandomizedSearchCV(
         lgbm,
         param_grid,
-        n_iter=50,  # Try 20 random combinations
+        n_iter=100,  # Try 20 random combinations
         scoring=rmse_scorer,
         cv=3,
         verbose=1,
@@ -159,14 +162,14 @@ test_meta_features = np.column_stack(test_meta_features_list)
 
 # Create feature names for meta features
 meta_feature_names = [f'quantile_pred_{int(q*100)}' for q in quantiles]
-original_feature_names = X_train_meta.columns.tolist()
+original_feature_names = feature_names
 all_feature_names = meta_feature_names + original_feature_names
 
 train_meta_features = np.hstack([train_meta_features, X_train_meta])
 test_meta_features = np.hstack([test_meta_features, X_test])
 
-train_meta_features = pd.DataFrame(train_meta_features, columns=all_feature_names, index=X_train_meta.index)
-test_meta_features = pd.DataFrame(test_meta_features, columns=all_feature_names, index=X_test.index)
+train_meta_features = pd.DataFrame(train_meta_features, columns=all_feature_names)
+test_meta_features = pd.DataFrame(test_meta_features, columns=all_feature_names)
 
 
 print("Train meta features shape:", train_meta_features.shape) # Added print statement
@@ -217,3 +220,10 @@ base_models_filename = '/Users/nouromran/Documents/upWork/signal integrity optim
 joblib.dump(base_models, base_models_filename)
 
 print(f"Base models saved to {base_models_filename}")
+
+
+
+"""scaler_filename = '/Users/nouromran/Documents/upWork/signal integrity optimization/Models/scaler.joblib'
+joblib.dump(scaler, scaler_filename)
+print(f"Scaler saved to {scaler_filename}")
+"""

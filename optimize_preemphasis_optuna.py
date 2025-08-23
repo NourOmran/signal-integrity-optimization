@@ -116,7 +116,7 @@ if __name__ == "__main__":
     #il_values_example = [-4.89, -7.13, -9.7, -19.95, -22.99, -34.84]
     #data_rate_example = 10 
 
-    il_values_example = [-3.57, -3.7, -3.83, -4.8, -5.93, -30.57]
+    il_values_example = [-8, -10.2, -12.77, -24.27, -33.33, -70.29]
     data_rate_example = 10  # Mbps
     best_params, best_eyesnr = optimize_preemphasis(il_values_example, data_rate_example, trials=700)
     #print("Best Parameters:", best_params)
